@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -11,12 +11,6 @@ interface Product {
   link?: string;
 }
 
-interface Skill {
-  id: string;
-  name: string;
-  level: number;
-}
-
 interface ProfileData {
   name: string;
   role: string;
@@ -27,7 +21,6 @@ interface ProfileData {
   email: string;
   phone: string;
   telegram: string;
-  avatar: string;
 }
 
 interface Toast {
@@ -95,18 +88,8 @@ const DEMO_PRODUCTS: Product[] = [
   },
 ];
 
-const DEMO_SKILLS: Skill[] = [
-  { id: "1", name: "Теория физического воспитания", level: 85 },
-  { id: "2", name: "Методика преподавания", level: 80 },
-  { id: "3", name: "Спортивная анатомия", level: 75 },
-  { id: "4", name: "Адаптивная физкультура", level: 70 },
-  { id: "5", name: "Организация соревнований", level: 65 },
-  { id: "6", name: "Цифровые образовательные инструменты", level: 72 },
-];
-
 const STORAGE_KEY = "portfolio_data_v1";
-const DEFAULT_AVATAR =
-  "https://cdn.poehali.dev/projects/b0c58710-057c-4a87-8189-aeb1b8375040/files/0a77886e-5650-4623-83e2-4e1c8b5660ce.jpg";
+
 
 function loadFromStorage() {
   try {
@@ -350,22 +333,18 @@ export default function Index() {
       email: "vinichenko@example.com",
       phone: "+7 (914) 000-00-00",
       telegram: "@artem_vinichenko",
-      avatar: DEFAULT_AVATAR,
     }
   );
 
-  const [skills, setSkills] = useState<Skill[]>(stored?.skills ?? DEMO_SKILLS);
   const [products, setProducts] = useState<Product[]>(
     stored?.products ?? DEMO_PRODUCTS
   );
-  const [newSkillName, setNewSkillName] = useState("");
   const [filterType, setFilterType] = useState<Product["type"] | "Все">("Все");
   const [productModal, setProductModal] = useState<{
     open: boolean;
     product: Partial<Product> | null;
   }>({ open: false, product: null });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 60);
@@ -374,8 +353,8 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    saveToStorage({ profile, skills, products });
-  }, [profile, skills, products]);
+    saveToStorage({ profile, products });
+  }, [profile, products]);
 
   const addToast = useCallback(
     (message: string, type: Toast["type"] = "success") => {
@@ -392,32 +371,6 @@ export default function Index() {
   const removeToast = useCallback((id: string) => {
     setToasts((t) => t.filter((x) => x.id !== id));
   }, []);
-
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setProfile((p) => ({ ...p, avatar: ev.target?.result as string }));
-      addToast("Фото обновлено!", "success");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const addSkill = () => {
-    if (!newSkillName.trim()) return;
-    setSkills((s) => [
-      ...s,
-      { id: Date.now().toString(), name: newSkillName.trim(), level: 60 },
-    ]);
-    setNewSkillName("");
-    addToast("Навык добавлен", "success");
-  };
-
-  const removeSkill = (id: string) => {
-    setSkills((s) => s.filter((x) => x.id !== id));
-    addToast("Навык удалён", "info");
-  };
 
   const filteredProducts =
     filterType === "Все"
@@ -442,7 +395,6 @@ export default function Index() {
 
   const navLinks = [
     { href: "#about", label: "О себе" },
-    { href: "#skills", label: "Навыки" },
     { href: "#products", label: "Продукты" },
     { href: "#contacts", label: "Контакты" },
   ];
@@ -508,9 +460,9 @@ export default function Index() {
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full -translate-x-1/3 translate-y-1/4 bg-gradient-to-tr from-amber-100/60 to-transparent" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 flex items-center">
           {/* text */}
-          <div className="order-2 md:order-1">
+          <div className="w-full max-w-2xl">
             <div
               className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-[#4f46e5] text-xs font-medium px-3 py-1.5 rounded-full mb-6 animate-fade-in"
             >
@@ -571,43 +523,6 @@ export default function Index() {
               >
                 Связаться
               </a>
-            </div>
-          </div>
-
-          {/* avatar */}
-          <div
-            className="order-1 md:order-2 flex justify-center animate-scale-in"
-            style={{ animationDelay: "0.2s", opacity: 0 }}
-          >
-            <div className="relative">
-              <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-3xl overflow-hidden shadow-2xl shadow-indigo-200/50 ring-4 ring-white animate-float">
-                <img
-                  src={profile.avatar}
-                  alt={profile.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
-                  }}
-                />
-              </div>
-              {editMode && (
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#f59e0b] text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg hover:bg-amber-500 transition flex items-center gap-1.5 animate-scale-in whitespace-nowrap"
-                >
-                  <Icon name="Camera" size={13} />
-                  Загрузить фото
-                </button>
-              )}
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#f59e0b]/20 rounded-2xl -z-10" />
-              <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-[#4f46e5]/10 rounded-3xl -z-10" />
             </div>
           </div>
         </div>
@@ -681,72 +596,6 @@ export default function Index() {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── Skills ─────────────────────────────────────────── */}
-      <section id="skills" className="py-20 bg-[#f8fafc]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <p className="text-xs font-medium text-[#4f46e5] uppercase tracking-widest mb-3">
-            02 — Навыки
-          </p>
-          <h2 className="font-cormorant font-semibold text-3xl sm:text-4xl text-gray-900 mb-10">
-            Профессиональные навыки
-          </h2>
-
-          <div className="grid sm:grid-cols-2 gap-4 mb-8">
-            {skills.map((skill, i) => (
-              <div
-                key={skill.id}
-                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow animate-fade-in"
-                style={{ animationDelay: `${i * 0.05}s`, opacity: 0 }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-medium text-gray-800 text-sm">
-                    {skill.name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[#4f46e5]">
-                      {skill.level}%
-                    </span>
-                    {editMode && (
-                      <button
-                        onClick={() => removeSkill(skill.id)}
-                        className="text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        <Icon name="Trash2" size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] rounded-full transition-all duration-700"
-                    style={{ width: `${skill.level}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {editMode && (
-            <div className="flex gap-3 max-w-md animate-fade-in">
-              <input
-                value={newSkillName}
-                onChange={(e) => setNewSkillName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addSkill()}
-                placeholder="Название нового навыка"
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/40 focus:border-[#4f46e5] transition"
-              />
-              <button
-                onClick={addSkill}
-                className="bg-[#4f46e5] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#4338ca] transition flex items-center gap-1.5"
-              >
-                <Icon name="Plus" size={15} />
-                Добавить
-              </button>
-            </div>
-          )}
         </div>
       </section>
 
