@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -9,6 +9,7 @@ interface Product {
   type: "Урок" | "Презентация" | "Методичка" | "Тест" | "Проект" | "Курс";
   year: string;
   link?: string;
+  image?: string;
 }
 
 interface ProfileData {
@@ -160,9 +161,19 @@ function ProductModal({
   const [form, setForm] = useState<Partial<Product>>(
     product ?? { type: "Урок", year: new Date().getFullYear().toString() }
   );
+  const imgInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: keyof Product, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) =>
+      setForm((f) => ({ ...f, image: ev.target?.result as string }));
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,6 +185,7 @@ function ProductModal({
       type: form.type as Product["type"],
       year: form.year ?? new Date().getFullYear().toString(),
       link: form.link,
+      image: form.image,
     });
   };
 
@@ -186,7 +198,7 @@ function ProductModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-scale-in">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-scale-in max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-golos font-bold text-xl text-gray-900">
             {form.id ? "Редактировать продукт" : "Добавить продукт"}
@@ -200,6 +212,53 @@ function ProductModal({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Image upload */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">
+              Фото продукта
+            </label>
+            <div
+              onClick={() => imgInputRef.current?.click()}
+              className="relative cursor-pointer rounded-xl border-2 border-dashed border-gray-200 hover:border-[#4f46e5] transition-colors overflow-hidden"
+              style={{ height: form.image ? "160px" : "80px" }}
+            >
+              {form.image ? (
+                <>
+                  <img
+                    src={form.image}
+                    alt="preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs font-medium flex items-center gap-1">
+                      <Icon name="Camera" size={14} />
+                      Изменить фото
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setForm((f) => ({ ...f, image: undefined })); }}
+                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full gap-2 text-gray-400 text-sm">
+                  <Icon name="ImagePlus" size={18} />
+                  Нажмите, чтобы добавить фото
+                </div>
+              )}
+            </div>
+            <input
+              ref={imgInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          </div>
+
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">
               Название *
@@ -644,9 +703,19 @@ export default function Index() {
             {filteredProducts.map((product, i) => (
               <div
                 key={product.id}
-                className="bg-[#f8fafc] border border-gray-100 rounded-2xl p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 animate-slide-up flex flex-col"
+                className="bg-[#f8fafc] border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 animate-slide-up flex flex-col"
                 style={{ animationDelay: `${i * 0.07}s`, opacity: 0 }}
               >
+                {product.image && (
+                  <div className="h-40 overflow-hidden shrink-0">
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="p-5 flex flex-col flex-1">
                 <div className="flex items-start justify-between mb-3">
                   <span
                     className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${TYPE_COLORS[product.type]}`}
@@ -708,6 +777,7 @@ export default function Index() {
                       )}
                     </div>
                   )}
+                </div>
                 </div>
               </div>
             ))}
